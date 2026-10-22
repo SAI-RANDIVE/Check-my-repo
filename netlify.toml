@@ -1,0 +1,8 @@
+[build]
+  publish = "."
+
+[[redirects]]
+  from = "/*"
+  to = "https://codesentinel-q1ld.onrender.com/:splat"
+  status = 200
+  force = true

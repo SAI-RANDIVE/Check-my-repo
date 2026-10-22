@@ -335,6 +335,8 @@ The container binds `$PORT`, runs as a non-root user with a `HEALTHCHECK`, and k
 
 Netlify can host a separate static frontend, but it cannot run this Python FastAPI application through the current Netlify Functions setup. If you keep a Netlify site, configure it as a proxy to the deployed Render backend; do not use Netlify's default static publish page as the application URL.
 
+To proxy this deployment through Netlify, use the included `netlify.toml`, connect the repository to the Netlify site, and deploy from `main`. It forwards every path to `https://codesentinel-q1ld.onrender.com`, while Render continues to run the FastAPI backend.
+
 ## Configuration
 
 All settings are environment variables prefixed `CS_` (or entries in `.env`); see [.env.example](.env.example). None are required.
