@@ -334,7 +334,7 @@ The container binds `$PORT`, runs as a non-root user with a `HEALTHCHECK`, and k
 
 ## Deploy to Netlify
 
-Netlify deploys the FastAPI application through the adapter in `netlify/functions/api.py`.
+Netlify deploys the FastAPI application through the adapter in `netlify/functions/api.py`. The function proxy preserves the requested path, so the app is available at `/`, `/health`, `/docs`, and the REST endpoints.
 
 1. Push this repository to GitHub and import it in Netlify.
 2. Netlify will use `netlify.toml`, install the Python dependencies, and publish the `api` function.
