@@ -40,7 +40,6 @@ Everything is real: vulnerability data is pulled live from OSV.dev, FIRST EPSS a
 - [REST API](#rest-api)
 - [Evaluation](#evaluation)
 - [Deploy to Render](#deploy-to-render)
-- [Deploy to Netlify](#deploy-to-netlify)
 - [Configuration](#configuration)
 - [Ethics statement](#ethics-statement)
 - [Limitations and future work](#limitations-and-future-work)
@@ -324,24 +323,17 @@ PyGoat's P0s include taint-confirmed SQL injection (`introduction/views.py:162`,
 
 ## Deploy to Render
 
+CodeSentinel is a server-rendered FastAPI application, not a static frontend. It needs a Python backend process for the UI, scan workers, SQLite database and REST API. The repository includes a Dockerfile and `render.yaml` for the backend.
+
 1. Push this repository to GitHub.
-2. In Render: **New → Web Service → Build and deploy from a Git repository**, pick the repository.
-3. Runtime **Docker** (Render detects the `Dockerfile`), instance type **Free**.
-4. Environment variables (optional): `CS_LOG_LEVEL=INFO`. Local-path scanning is already disabled in the image (`CS_ALLOW_LOCAL_PATHS=false`).
-5. Health check path: `/health`. Deploy.
+2. In Render, create a Blueprint from the repository, or choose **New → Web Service → Build and deploy from a Git repository**.
+3. Use the Docker runtime and the Free plan. Render detects the included `Dockerfile`.
+4. Set `CS_ALLOW_LOCAL_PATHS=false`. Set `CS_GITHUB_TOKEN` only when scanning private repositories.
+5. Use `/health` as the health check path and deploy.
 
-The container binds `$PORT`, runs as a non-root user with a `HEALTHCHECK`, and keeps SQLite in `/app/data`. Render's free tier has an ephemeral disk, so scan history resets on redeploy; attach a persistent disk at `/app/data` to keep it.
+The container binds `$PORT`, runs as a non-root user with a `HEALTHCHECK`, and keeps SQLite in `/app/data`. Render's free tier has ephemeral storage, so scan history resets after redeploy; attach a persistent disk mounted at `/app/data` if history and generated exports must survive restarts.
 
-## Deploy to Netlify
-
-Netlify deploys the FastAPI application through the adapter in `netlify/functions/api.py`. The function proxy preserves the requested path, so the app is available at `/`, `/health`, `/docs`, and the REST endpoints.
-
-1. Push this repository to GitHub and import it in Netlify.
-2. Netlify will use `netlify.toml`, install the Python dependencies, and publish the `api` function.
-3. Set `CS_ALLOW_LOCAL_PATHS=false` in Netlify environment variables. Add `CS_GITHUB_TOKEN` only when scanning private repositories.
-4. Open the generated site URL and check `/health`.
-
-Netlify Functions use ephemeral storage, so SQLite scan history and generated exports are not durable across cold starts or redeploys. For persistent history or scans that exceed a serverless execution window, use the included `Dockerfile` with a container host instead.
+Netlify can host a separate static frontend, but it cannot run this Python FastAPI application through the current Netlify Functions setup. If you keep a Netlify site, configure it as a proxy to the deployed Render backend; do not use Netlify's default static publish page as the application URL.
 
 ## Configuration
 

@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: codesentinel
+    runtime: docker
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: CS_ALLOW_LOCAL_PATHS
+        value: "false"
+      - key: CS_DATA_DIR
+        value: /app/data
