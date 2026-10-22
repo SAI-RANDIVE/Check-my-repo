@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}New scan · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="grid lg:grid-cols-[minmax(0,1fr)_380px] gap-8">
+  <section>
+    <h1 class="text-[22px] font-semibold tracking-tight">Scan a repository</h1>
+    <p class="text-muted mt-1 max-w-[62ch]">Finds leaked credentials in the code and its git history, ranks vulnerable dependencies by real-world exploitation (EPSS, CISA KEV), checks code, containers and CI workflows, and produces an SBOM, CBOM and SARIF you can hand to auditors.</p>
+
+    <form id="scan-form" class="panel mt-6" enctype="multipart/form-data" novalidate>
+      <div class="px-4 pt-3 border-b border-line flex" role="tablist">
+        <button type="button" class="tab" role="tab" data-source="url" aria-selected="true">GitHub URL</button>
+        <button type="button" class="tab" role="tab" data-source="file" aria-selected="false">Upload .zip</button>
+        {% if allow_local %}<button type="button" class="tab" role="tab" data-source="path" aria-selected="false">Local path <span class="text-faint text-2xs">dev</span></button>{% endif %}
+      </div>
+      <div class="p-4 space-y-4">
+        <div data-pane="url">
+          <label class="label" for="url">Public repository</label>
+          <input id="url" name="url" class="field mt-1.5 font-mono" placeholder="https://github.com/owner/repo" autocomplete="off" spellcheck="false">
+          <p class="text-2xs text-faint mt-1.5">Cloned into a temporary directory (120 s and 200 MB limits) and deleted after the scan. Code is read, never executed.</p>
+        </div>
+        <div data-pane="file" class="hidden">
+          <label class="label" for="file">Source archive</label>
+          <input id="file" name="file" type="file" accept=".zip" class="field mt-1.5 pt-1.5 text-muted file:mr-3 file:rounded file:border-0 file:bg-raised file:text-ink file:px-2 file:py-0.5">
+          <p class="text-2xs text-faint mt-1.5">Up to {{ max_upload }} MB. Archives with path traversal entries, symlinks or extreme compression ratios are rejected.</p>
+        </div>
+        {% if allow_local %}
+        <div data-pane="path" class="hidden">
+          <label class="label" for="path">Directory on this machine</label>
+          <input id="path" name="path" class="field mt-1.5 font-mono" placeholder="C:\code\my-service or /home/me/my-service" spellcheck="false">
+          <p class="text-2xs text-faint mt-1.5">Development mode only. Disable with <span class="font-mono">CS_ALLOW_LOCAL_PATHS=false</span> on shared servers.</p>
+        </div>
+        {% endif %}
+
+        <div class="grid sm:grid-cols-3 gap-4 pt-1">
+          <label class="flex items-start gap-2.5 text-[13px]">
+            <input type="checkbox" name="include_history" checked class="mt-1 accent-[#7b83eb]">
+            <span>Git history<span class="block text-2xs text-faint">Last 500 commits, for deleted secrets</span></span>
+          </label>
+          <label class="flex items-start gap-2.5 text-[13px]">
+            <input type="checkbox" name="include_transitive" checked class="mt-1 accent-[#7b83eb]">
+            <span>Transitive dependencies<span class="block text-2xs text-faint">From lockfiles where available</span></span>
+          </label>
+          <label class="text-[13px]">
+            <span class="label">Fail the gate on</span>
+            <select name="fail_on" class="field mt-1">
+              <option value="">Repository default (P0)</option>
+              <option value="p0">P0 · critical now</option>
+              <option value="p1">P1 and above</option>
+              <option value="p2">P2 and above</option>
+            </select>
+          </label>
+        </div>
+        <p id="form-error" class="text-[13px] text-p0 hidden" role="alert"></p>
+      </div>
+      <div class="px-4 py-3 border-t border-line flex items-center gap-3">
+        <button type="submit" class="btn btn-primary" id="scan-btn">Start scan</button>
+        <span class="text-2xs text-faint">Limited to 5 scans per minute per client.</span>
+      </div>
+    </form>
+
+    {% if demos %}
+    <div class="mt-6">
+      <p class="label">Demo repositories</p>
+      <div class="mt-2 flex flex-wrap gap-2">
+        {% for d in demos %}
+        <button type="button" class="btn btn-sm" data-demo-path="{{ d.path }}">{{ d.label }} <span class="font-mono text-faint">{{ d.name }}</span></button>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="mt-10 grid sm:grid-cols-2 gap-x-8 gap-y-5 text-[13px]">
+      <div><p class="font-medium">Secrets, including history</p><p class="text-muted mt-0.5">27 provider formats, generic assignments and entropy. Deleted secrets are still recoverable from history, so those are reported too.</p></div>
+      <div><p class="font-medium">Exploit-aware dependencies</p><p class="text-muted mt-0.5">OSV advisories ranked with EPSS probability and CISA KEV, not CVSS alone. Exact upgrade command for each.</p></div>
+      <div><p class="font-medium">Code, containers, CI</p><p class="text-muted mt-0.5">Taint-aware Python AST checks, JS/TS rules, Dockerfile and compose hardening, GitHub Actions pinning and injection.</p></div>
+      <div><p class="font-medium">SBOM, CBOM, SARIF</p><p class="text-muted mt-0.5">CycloneDX 1.6 component and crypto inventories (with quantum-vulnerability flags) and GitHub code-scanning output.</p></div>
+    </div>
+  </section>
+
+  <aside>
+    <div class="panel">
+      <div class="panel-head"><span class="label">Recent scans</span><a href="/history" class="text-2xs link">All</a></div>
+      {% if recent %}
+      <ul>
+        {% for s in recent %}
+        <li class="border-b border-line last:border-0">
+          <a href="/scans/{{ s.id }}" class="flex items-center gap-3 px-4 py-3 hover:bg-raised">
+            <span class="grade grade-{{ s.grade or 'none' }} w-8 h-8 rounded-md grid place-items-center font-semibold text-[15px] border border-line2 shrink-0">{{ s.grade or '·' }}</span>
+            <span class="min-w-0 flex-1">
+              <span class="block truncate font-medium text-[13px]">{{ s.project.name }}</span>
+              <span class="block text-2xs text-faint">#{{ s.id }} · {{ s.created_at | ago }}{% if s.commit_sha %} · <span class="font-mono">{{ s.commit_sha[:7] }}</span>{% endif %}</span>
+            </span>
+            {% if s.status == 'done' %}
+              <span class="chip {{ 'chip-pass' if s.gate_passed else 'chip-fail' }}">{{ 'PASS' if s.gate_passed else 'FAIL' }}</span>
+            {% elif s.status == 'error' %}
+              <span class="chip chip-muted">error</span>
+            {% else %}
+              <span class="chip chip-muted">{{ s.stage | lower }}</span>
+            {% endif %}
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="px-4 py-6 text-muted text-[13px]">No scans yet. Results appear here.</p>
+      {% endif %}
+    </div>
+  </aside>
+</div>
+{% endblock %}

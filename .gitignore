@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# Local configuration
+.env
+
+# Runtime data (SQLite database, feed cache, generated reports)
+data/
+out/
+*.sarif
+sbom*.json
+cbom*.json
+report*.pdf
+
+# Demo repositories are generated at runtime by demo/make_demo_repo.py
+demo/vulnerable-shop/
+demo/vulnerable-shop-fixed/
+
+# Editors / OS
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store

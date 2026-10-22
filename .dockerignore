@@ -1,0 +1,12 @@
+.git
+.venv
+venv
+data
+out
+__pycache__
+*.pyc
+.pytest_cache
+.ruff_cache
+.env
+demo/vulnerable-shop
+demo/vulnerable-shop-fixed

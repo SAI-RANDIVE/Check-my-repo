@@ -1,0 +1,34 @@
+[project]
+name = "codesentinel"
+version = "1.0.0"
+description = "Software supply-chain security gate: secrets, exploit-aware dependency risk, SAST, IaC/CI audit, SBOM and CBOM."
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "-q"
+markers = [
+    "live: test talks to live public APIs (skipped unless CS_LIVE_TESTS=1)",
+]
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+extend-exclude = ["demo/vulnerable-shop", "demo/vulnerable-shop-fixed", "data"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "S", "SIM"]
+ignore = [
+    "E501",   # long strings in rule descriptions and remediation text
+    "S101",   # assert is fine in tests
+    "S603",   # subprocess calls use fixed argv lists, never a shell
+    "S607",   # `git` is resolved from PATH by design
+    "S314",   # pom.xml parsing; expat has entity-expansion protection
+    "S324",   # md5/sha1 used only for non-security fingerprints
+    "B008",   # FastAPI dependency defaults
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S105", "S106", "S108", "S311"]
+"demo/*" = ["S105", "S106"]

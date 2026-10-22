@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}History · {{ app_name }}{% endblock %}
+{% block content %}
+{% if not project %}
+<h1 class="text-[22px] font-semibold tracking-tight">History</h1>
+<p class="text-muted mt-1">Every target you have scanned. Open one to see its score trend and compare scans.</p>
+<div class="panel mt-6 overflow-x-auto">
+  <table class="tbl">
+    <thead><tr><th>Project</th><th>Source</th><th class="num">Scans</th><th>Latest grade</th><th>Gate</th><th>Last scanned</th></tr></thead>
+    <tbody>
+    {% for p in projects %}
+      {% set done = p.scans | selectattr('status', 'equalto', 'done') | list %}
+      {% set last = done[-1] if done else None %}
+      <tr class="row-link" data-href="/projects/{{ p.id }}">
+        <td class="font-medium"><a href="/projects/{{ p.id }}" class="hover:underline">{{ p.name }}</a></td>
+        <td class="font-mono text-[12px] text-muted break-all">{{ p.source }}</td>
+        <td class="num">{{ p.scans|length }}</td>
+        <td>{% if last %}<span class="font-semibold">{{ last.grade }}</span> <span class="text-faint">{{ last.score|round|int }}</span>{% else %}<span class="text-faint">—</span>{% endif %}</td>
+        <td>{% if last %}<span class="chip {{ 'chip-pass' if last.gate_passed else 'chip-fail' }}">{{ 'PASS' if last.gate_passed else 'FAIL' }}</span>{% endif %}</td>
+        <td class="text-muted">{{ (p.scans[-1].created_at if p.scans else None) | ago }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="6" class="text-muted">No projects yet. <a class="link" href="/">Run a scan</a>.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<nav class="text-[13px] text-muted"><a href="/history" class="hover:text-ink">History</a> <span class="text-faint">/</span> <span class="text-ink">{{ project.name }}</span></nav>
+<h1 class="text-[22px] font-semibold tracking-tight mt-2 break-all">{{ project.name }}</h1>
+<p class="text-[13px] text-muted font-mono break-all">{{ project.source }}</p>
+
+<div class="grid lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] gap-4 mt-6">
+  <figure class="panel p-4">
+    <figcaption class="label">Security score over time</figcaption>
+    <div class="h-[240px] mt-3">
+      {% if scans|length >= 1 %}<canvas id="chart-trend" role="img" aria-label="Line chart of the security score for each scan"></canvas>
+      {% else %}<p class="text-muted text-[13px]">No completed scans yet.</p>{% endif %}
+    </div>
+  </figure>
+  <div class="panel overflow-x-auto">
+    <table class="tbl">
+      <thead><tr><th>Scan</th><th>Commit</th><th>Grade</th><th class="num">P0</th><th class="num">P1</th><th>Gate</th></tr></thead>
+      <tbody>
+      {% for sc in scans|reverse %}
+        <tr class="row-link" data-href="/scans/{{ sc.id }}">
+          <td><a href="/scans/{{ sc.id }}" class="hover:underline">#{{ sc.id }}</a> <span class="text-faint text-2xs">{{ sc.created_at | ago }}</span></td>
+          <td class="font-mono text-[12px] text-muted">{{ (sc.commit_sha or '—')[:7] }}</td>
+          <td><span class="font-semibold">{{ sc.grade }}</span> <span class="text-faint">{{ sc.score|round|int }}</span></td>
+          <td class="num">{{ (sc.stats or {}).get('by_priority', {}).get('P0', 0) }}</td>
+          <td class="num">{{ (sc.stats or {}).get('by_priority', {}).get('P1', 0) }}</td>
+          <td><span class="chip {{ 'chip-pass' if sc.gate_passed else 'chip-fail' }}">{{ 'PASS' if sc.gate_passed else 'FAIL' }}</span></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<section class="mt-8">
+  <div class="flex flex-wrap items-end gap-3">
+    <div>
+      <h2 class="text-[16px] font-semibold">Compare scans</h2>
+      <p class="text-[13px] text-muted">Findings are matched by fingerprint, so a finding that only moved lines still counts as unchanged.</p>
+    </div>
+    {% if scans|length >= 2 %}
+    <form method="get" class="flex items-center gap-2 ml-auto text-[13px]">
+      <label class="text-muted" for="base">Base</label>
+      <select id="base" name="base" class="field w-auto">{% for sc in scans %}<option value="{{ sc.id }}" {{ 'selected' if diff and diff.base == sc.id }}>#{{ sc.id }} · {{ sc.grade }}</option>{% endfor %}</select>
+      <label class="text-muted" for="head">Head</label>
+      <select id="head" name="head" class="field w-auto">{% for sc in scans %}<option value="{{ sc.id }}" {{ 'selected' if diff and diff.head == sc.id }}>#{{ sc.id }} · {{ sc.grade }}</option>{% endfor %}</select>
+      <button class="btn btn-sm" type="submit">Compare</button>
+    </form>
+    {% endif %}
+  </div>
+  {% if diff %}
+  <div class="grid md:grid-cols-3 gap-4 mt-4">
+    {% for key, label, tone in [('new', 'New', 'text-p0'), ('fixed', 'Fixed', 'text-good'), ('unchanged', 'Unchanged', 'text-muted')] %}
+    <div class="panel min-w-0">
+      <div class="panel-head"><span class="label">{{ label }}</span><span class="text-[18px] font-semibold {{ tone }}">{{ diff[key]|length }}</span></div>
+      <ul class="max-h-[420px] overflow-y-auto text-[12.5px]">
+        {% for d in diff[key][:200] %}
+        <li class="px-4 py-2 border-b border-line last:border-0 flex gap-2 items-start">
+          <span class="chip chip-{{ d.priority|lower }} shrink-0">{{ d.priority }}</span>
+          <a class="min-w-0 hover:underline" href="/findings/{{ d.id }}"><span class="block truncate">{{ d.title }}</span><span class="block font-mono text-2xs text-faint truncate">{{ d.file }}{% if d.line %}:{{ d.line }}{% endif %}</span></a>
+        </li>
+        {% else %}<li class="px-4 py-3 text-muted">None</li>{% endfor %}
+      </ul>
+    </div>
+    {% endfor %}
+  </div>
+  {% elif scans|length < 2 %}
+  <p class="text-[13px] text-muted mt-3">Run another scan of this project to compare results.</p>
+  {% endif %}
+</section>
+<script type="application/json" id="trend-data" nonce="{{ nonce }}">{{ scans | map(attribute='id') | list | tojson }}</script>
+<script type="application/json" id="trend-scores" nonce="{{ nonce }}">{{ scans | map(attribute='score') | list | tojson }}</script>
+<script type="application/json" id="trend-grades" nonce="{{ nonce }}">{{ scans | map(attribute='grade') | list | tojson }}</script>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+{% if project %}<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" nonce="{{ nonce }}"></script>{% endif %}
+{% endblock %}

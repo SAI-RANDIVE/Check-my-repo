@@ -1,0 +1,56 @@
+name: CodeSentinel
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# Least privilege: read the code, write code-scanning alerts. Nothing else.
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  security-gate:
+    name: Tests + security gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      # Every action is pinned to a full commit SHA (see tj-actions/changed-files, CVE-2025-30066).
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          fetch-depth: 0  # full history so leaked-then-deleted secrets are found
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install
+        run: pip install -r requirements.txt
+
+      - name: Unit and integration tests
+        run: python -m pytest
+
+      - name: CodeSentinel scan (fails the build on P0)
+        run: >
+          python -m codesentinel scan . --fail-on p0
+          --sarif results.sarif --sbom sbom.cdx.json --cbom cbom.cdx.json
+
+      - name: Upload SARIF to GitHub code scanning
+        if: always()
+        uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370  # v4.39.1
+        with:
+          sarif_file: results.sarif
+          category: codesentinel
+
+      - name: Upload SBOM and CBOM
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: codesentinel-bom
+          path: |
+            sbom.cdx.json
+            cbom.cdx.json
+          if-no-files-found: warn

@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+{% block title %}{{ scan.project.name }} · scan #{{ scan.id }} · {{ app_name }}{% endblock %}
+{% block content %}
+{% if not report %}
+{# ------------------------------------------------------------------ progress #}
+<div class="max-w-[640px]" id="progress" data-scan-id="{{ scan.id }}">
+  <p class="label">Scan #{{ scan.id }}</p>
+  <h1 class="text-[22px] font-semibold tracking-tight mt-1 break-all">{{ scan.project.name }}</h1>
+  <p class="text-muted text-[13px] font-mono break-all">{{ scan.project.source }}</p>
+  <div class="panel mt-6">
+    <div class="panel-head">
+      <span class="text-[13px]" id="progress-status">{{ 'Failed' if scan.status == 'error' else 'Running' }}</span>
+      <span class="font-mono text-[13px] text-muted" id="elapsed">0.0 s</span>
+    </div>
+    <div class="px-4 pb-1" id="stage-list">
+      {% for st in (scan.stages or []) %}
+      <div class="stage" data-stage="{{ st.name }}" data-state="{{ st.state }}">
+        <span class="stage-icon" aria-hidden="true"></span>
+        <span>{{ st.name }}</span>
+        <span class="text-2xs text-faint font-mono" data-seconds>{{ '%.1f s' % st.seconds if st.seconds is not none else '' }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  <p id="progress-error" class="mt-4 text-[13px] text-p0 {{ '' if scan.error else 'hidden' }}" role="alert">{{ scan.error or '' }}</p>
+</div>
+{% else %}
+{# ------------------------------------------------------------------ report #}
+{% set g = report.gate %}
+{% set st = report.stats %}
+{% set grade_color = {'A':'#3fb950','B':'#7cc46a','C':'#f2b324','D':'#ec835a','F':'#e5534b'}[g.grade] %}
+<div class="flex flex-col lg:flex-row lg:items-start gap-6">
+  <div class="flex items-center gap-5 min-w-0 flex-1">
+    <svg width="88" height="88" viewBox="0 0 88 88" role="img" aria-label="Grade {{ g.grade }}, score {{ g.score|round|int }} of 100" class="shrink-0">
+      <circle cx="44" cy="44" r="38" fill="none" stroke="#262a31" stroke-width="7"/>
+      <circle cx="44" cy="44" r="38" fill="none" stroke="{{ grade_color }}" stroke-width="7" stroke-linecap="round"
+              stroke-dasharray="{{ (238.76 * g.score / 100)|round(2) }} 238.76" transform="rotate(-90 44 44)"/>
+      <text x="44" y="47" text-anchor="middle" fill="#e7e8eb" font-size="30" font-weight="600" font-family="Inter">{{ g.grade }}</text>
+      <text x="44" y="64" text-anchor="middle" fill="#9096a2" font-size="10" font-family="Inter">{{ g.score|round|int }}/100</text>
+    </svg>
+    <div class="min-w-0">
+      <p class="label">Scan #{{ scan.id }} · {{ scan.created_at | ago }}</p>
+      <h1 class="text-[22px] font-semibold tracking-tight break-all">{{ report.target }}</h1>
+      <p class="text-[13px] text-muted flex flex-wrap gap-x-4 gap-y-0.5 mt-0.5">
+        {% if report.source.startswith('https://') %}<a class="link" href="{{ report.source }}" rel="noopener noreferrer" target="_blank">{{ report.source.replace('https://', '') }}</a>{% else %}<span class="font-mono break-all">{{ report.source }}</span>{% endif %}
+        {% if report.commit_sha %}<span>commit <span class="font-mono text-ink">{{ report.commit_sha[:10] }}</span>{% if report.branch %} on {{ report.branch }}{% endif %}</span>{% endif %}
+        <span>{{ '%.1f' % report.duration_seconds }} s</span>
+        <a class="link" href="/projects/{{ scan.project_id }}">history</a>
+      </p>
+    </div>
+  </div>
+  <div class="panel lg:w-[440px] shrink-0 {{ 'border-[#74302b]' if not g.passed else 'border-[#23602e]' }}">
+    <div class="px-4 py-3 flex items-center gap-3">
+      <span class="text-[15px] font-bold tracking-wide px-2.5 py-1 rounded-md {{ 'bg-[#b8322b] text-white' if not g.passed else 'bg-[#1f7a33] text-white' }}">{{ 'FAIL' if not g.passed else 'PASS' }}</span>
+      <span class="text-[13px] text-muted">CI gate · fail on <span class="text-ink font-medium">{{ g.fail_on|upper }}</span></span>
+    </div>
+    <ul class="px-4 pb-3 text-[12.5px] space-y-1 text-muted">
+      {% for r in g.reasons[:5] %}<li class="{{ 'text-ink' if loop.first else '' }} break-words">{{ r }}</li>{% endfor %}
+      {% if g.reasons|length > 5 %}<li class="text-faint">and {{ g.reasons|length - 5 }} more</li>{% endif %}
+    </ul>
+  </div>
+</div>
+
+{% if report.intel_partial %}
+<p class="mt-4 text-[13px] text-p2">One or more threat-intelligence feeds were unavailable; dependency results may be incomplete.</p>
+{% endif %}
+
+<div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 mt-7 panel divide-x divide-line overflow-hidden">
+  {% for t in ['P0','P1','P2','P3'] %}
+  <div class="kpi {% if loop.index > 2 %}border-t sm:border-t-0 border-line{% endif %}">
+    <p class="label flex items-center gap-1.5"><span class="dot bg-{{ t|lower }}"></span>{{ t }}</p>
+    <p class="v">{{ g.counts.get(t, 0) }}</p>
+  </div>
+  {% endfor %}
+  <div class="kpi border-t lg:border-t-0 border-line"><p class="label">Components</p><p class="v">{{ st.components or 0 }}</p></div>
+  <div class="kpi border-t lg:border-t-0 border-line"><p class="label">CVEs</p><p class="v">{{ st.cves or 0 }}</p></div>
+  <div class="kpi border-t lg:border-t-0 border-line"><p class="label">KEV hits</p><p class="v {{ 'text-p0' if st.kev_hits else '' }}">{{ st.kev_hits or 0 }}</p></div>
+  <div class="kpi border-t lg:border-t-0 border-line"><p class="label">Secrets</p><p class="v">{{ st.secrets_head or 0 }}<span class="text-faint text-[14px] font-normal"> / {{ st.secrets_history or 0 }} hist.</span></p></div>
+</div>
+
+<div class="grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.6fr)] gap-4 mt-4">
+  <figure class="panel p-4">
+    <figcaption class="label">Open findings by module</figcaption>
+    <div class="h-[220px] mt-3"><canvas id="chart-modules" role="img" aria-label="Bar chart of open findings per module"></canvas></div>
+  </figure>
+  <figure class="panel p-4">
+    <figcaption class="label">By priority</figcaption>
+    <div class="h-[220px] mt-3"><canvas id="chart-priority" role="img" aria-label="Doughnut chart of findings by priority tier"></canvas></div>
+  </figure>
+  <figure class="panel p-4">
+    <figcaption class="flex items-baseline justify-between gap-3">
+      <span class="label">CVSS vs EPSS · dependency vulnerabilities</span>
+      <span class="text-2xs text-faint">log scale · dashed lines = P0 thresholds</span>
+    </figcaption>
+    <div class="h-[220px] mt-3"><canvas id="chart-scatter" role="img" aria-label="Scatter plot of CVSS score against EPSS probability; CISA KEV entries highlighted"></canvas></div>
+  </figure>
+</div>
+
+<div class="flex flex-wrap items-center gap-2 mt-4">
+  <span class="label mr-1">Download</span>
+  <a class="btn btn-sm" href="/api/scans/{{ scan.id }}/export/pdf">PDF report</a>
+  <a class="btn btn-sm" href="/api/scans/{{ scan.id }}/export/sbom">SBOM <span class="text-faint">CycloneDX</span></a>
+  <a class="btn btn-sm" href="/api/scans/{{ scan.id }}/export/cbom">CBOM <span class="text-faint">CycloneDX</span></a>
+  <a class="btn btn-sm" href="/api/scans/{{ scan.id }}/export/sarif">SARIF</a>
+  <a class="btn btn-sm" href="/api/scans/{{ scan.id }}/export/csv">CSV</a>
+</div>
+
+<div class="mt-8 border-b border-line flex overflow-x-auto" role="tablist" id="report-tabs">
+  <button class="tab" role="tab" data-tab="findings" aria-selected="true">Findings <span class="text-faint">{{ findings|length }}</span></button>
+  <button class="tab" role="tab" data-tab="deps" aria-selected="false">Dependencies <span class="text-faint">{{ components|length }}</span></button>
+  <button class="tab" role="tab" data-tab="crypto" aria-selected="false">Crypto inventory <span class="text-faint">{{ crypto_rows|length }}</span></button>
+  <button class="tab" role="tab" data-tab="cicd" aria-selected="false">CI/CD &amp; IaC <span class="text-faint">{{ iac|length }}</span></button>
+</div>
+
+<section data-panel="findings" class="mt-4">
+  <div class="flex flex-wrap gap-2 items-center">
+    <input id="f-search" class="field max-w-[280px]" placeholder="Search rule, file, package, CVE" type="search" aria-label="Search findings">
+    <select id="f-module" class="field w-auto" aria-label="Module">
+      <option value="">All modules</option><option value="secrets">Secrets</option><option value="dependencies">Dependencies</option>
+      <option value="sast">SAST</option><option value="iac">IaC / CI</option><option value="crypto">Crypto</option>
+    </select>
+    <select id="f-priority" class="field w-auto" aria-label="Priority">
+      <option value="">All priorities</option><option>P0</option><option>P1</option><option>P2</option><option>P3</option>
+    </select>
+    <select id="f-status" class="field w-auto" aria-label="Status">
+      <option value="">Any status</option><option value="open" selected>Open</option><option value="false_positive">False positive</option>
+      <option value="accepted_risk">Accepted risk</option><option value="suppressed">Suppressed</option>
+    </select>
+    <span class="text-2xs text-faint ml-auto" id="f-count"></span>
+  </div>
+  <div class="panel mt-3 overflow-x-auto">
+    <table class="tbl" id="findings-table">
+      <thead><tr>
+        <th data-sort="priority">Tier</th><th data-sort="risk" class="num">Risk</th><th data-sort="module">Module</th>
+        <th data-sort="rule">Rule</th><th>Finding</th><th data-sort="file">Location</th><th>Why this tier</th>
+      </tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <div class="flex items-center gap-2 mt-3 text-[13px]" id="f-pager"></div>
+</section>
+
+<section data-panel="deps" class="mt-4 hidden-tab">
+  <p class="text-[13px] text-muted">{{ st.components or 0 }} components · {{ st.components_direct or 0 }} direct, {{ st.components_transitive or 0 }} transitive ·
+    {% for k, v in (st.ecosystems or {}).items() %}{{ k }} {{ v }}{{ ', ' if not loop.last }}{% endfor %}</p>
+  <div class="panel mt-3 overflow-x-auto">
+    <table class="tbl">
+      <thead><tr><th>Package</th><th>Version</th><th>Ecosystem</th><th>Relation</th><th>Licence</th><th>Package URL</th><th class="num">Vulns</th></tr></thead>
+      <tbody>
+      {% for c in components %}
+        <tr>
+          <td class="font-medium break-all">{{ c.name }}</td>
+          <td class="font-mono text-[12.5px]">{{ c.version or '—' }}{% if c.version_inferred %} <span class="chip chip-muted" title="Resolved from a version range">range</span>{% endif %}</td>
+          <td>{{ c.ecosystem }}</td>
+          <td class="text-muted">{{ 'direct' if c.direct else 'transitive' }}{% if c.scope == 'optional' %} · dev{% endif %}</td>
+          <td class="text-muted">{{ c.license or '—' }}</td>
+          <td class="font-mono text-[12px] text-muted break-all">{{ c.purl }}</td>
+          <td class="num">{% if c.vuln_count %}<button class="link" data-filter-package="{{ c.name }}">{{ c.vuln_count }}</button>{% else %}<span class="text-faint">0</span>{% endif %}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="7" class="text-muted">No supported manifests or lockfiles were found.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section data-panel="crypto" class="mt-4 hidden-tab">
+  <p class="text-[13px] text-muted">{{ st.crypto_assets or 0 }} cryptographic usages ·
+    {{ (st.crypto_by_class or {}).get('broken', 0) }} broken, {{ (st.crypto_by_class or {}).get('weak', 0) }} weak, {{ (st.crypto_by_class or {}).get('approved', 0) }} approved ·
+    {{ st.quantum_vulnerable_assets or 0 }} quantum-vulnerable (RSA/ECC). Exported as a CycloneDX 1.6 CBOM.</p>
+  <div class="panel mt-3 overflow-x-auto">
+    <table class="tbl">
+      <thead><tr><th>Algorithm</th><th>Primitive</th><th>Class</th><th>Post-quantum</th><th>Library</th><th class="num">Uses</th><th>Locations</th></tr></thead>
+      <tbody>
+      {% for a in crypto_rows %}
+        <tr>
+          <td class="font-medium">{{ a.name }}</td>
+          <td class="text-muted">{{ a.primitive }}</td>
+          <td><span class="chip {{ {'broken':'chip-p0','weak':'chip-p2','approved':'chip-pass'}[a.class] }}">{{ a.class }}</span></td>
+          <td>{% if a.qv %}<span class="text-p1">vulnerable</span>{% else %}<span class="text-faint">n/a</span>{% endif %}</td>
+          <td class="text-muted">{{ a.library or '—' }}</td>
+          <td class="num">{{ a.uses }}</td>
+          <td class="font-mono text-[12px] text-muted">{{ a.locations[:4]|join(', ') }}{% if a.locations|length > 4 %} +{{ a.locations|length - 4 }}{% endif %}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="7" class="text-muted">No cryptographic API usage detected in Python or JavaScript sources.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section data-panel="cicd" class="mt-4 hidden-tab">
+  <p class="text-[13px] text-muted max-w-[90ch]">Dockerfiles, compose files, committed <span class="font-mono">.env</span> files and GitHub Actions workflows. Unpinned third-party actions are what let the March 2025 <span class="font-mono">tj-actions/changed-files</span> compromise (CVE-2025-30066) leak CI secrets from thousands of repositories.</p>
+  <div class="panel mt-3 overflow-x-auto">
+    <table class="tbl">
+      <thead><tr><th>Tier</th><th>Rule</th><th>Finding</th><th>Location</th></tr></thead>
+      <tbody>
+      {% for f in iac %}
+        <tr class="row-link" data-href="/findings/{{ f.id }}">
+          <td><span class="chip chip-{{ f.priority|lower }}">{{ f.priority }}</span></td>
+          <td class="font-mono text-[12.5px]">{{ f.rule }}</td>
+          <td><a class="hover:underline" href="/findings/{{ f.id }}">{{ f.title }}</a></td>
+          <td class="font-mono text-[12.5px] text-muted break-all">{{ f.file }}{% if f.line %}:{{ f.line }}{% endif %}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="4" class="text-muted">No infrastructure or CI configuration issues found.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<script type="application/json" id="report-data" nonce="{{ nonce }}">{{ {
+  "findings": findings,
+  "byModule": st.by_module or {},
+  "counts": g.counts,
+} | tojson }}</script>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+{% if report %}<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" nonce="{{ nonce }}"></script>{% endif %}
+{% endblock %}

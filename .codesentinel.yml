@@ -1,0 +1,15 @@
+# CodeSentinel policy for this repository (format documented in app/policy.py).
+fail_on: p0
+
+ignore_paths:
+  # Deliberately vulnerable demo material: the real npm lockfiles in demo/data pin
+  # 2020-era packages on purpose, and the generated shops are not part of the product.
+  - demo/**
+
+suppressions:
+  - rule: generic-secret-assignment
+    path: tests/**
+    justification: >-
+      Rule test vectors (for example 'super-secret-signing-key') that exist to prove the
+      detectors fire. They are not credentials for any system.
+    expires: 2027-06-30

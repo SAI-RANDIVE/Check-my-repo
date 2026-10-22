@@ -1,0 +1,418 @@
+{
+  "repository": "demo/vulnerable-shop",
+  "commits": 10,
+  "findings": [
+    {
+      "module": "secrets",
+      "rule": "db-connection-string",
+      "file": ".env",
+      "line": 2,
+      "id": "GT-01"
+    },
+    {
+      "module": "secrets",
+      "rule": "stripe-live-key",
+      "file": ".env",
+      "line": 3,
+      "id": "GT-02"
+    },
+    {
+      "module": "secrets",
+      "rule": "generic-secret-assignment",
+      "file": ".env",
+      "line": 4,
+      "id": "GT-03"
+    },
+    {
+      "module": "secrets",
+      "rule": "aws-access-key-id",
+      "file": "config.py",
+      "line": 8,
+      "placeholder": true,
+      "id": "GT-04"
+    },
+    {
+      "module": "secrets",
+      "rule": "aws-access-key-id",
+      "file": "config.py",
+      "line": 11,
+      "historical": true,
+      "id": "GT-05"
+    },
+    {
+      "module": "secrets",
+      "rule": "aws-secret-access-key",
+      "file": "config.py",
+      "line": 12,
+      "historical": true,
+      "id": "GT-06"
+    },
+    {
+      "module": "secrets",
+      "rule": "stripe-test-key",
+      "file": "config.py",
+      "line": 14,
+      "historical": true,
+      "id": "GT-07"
+    },
+    {
+      "module": "sast",
+      "rule": "PY-SQLI",
+      "file": "app.py",
+      "line": 26,
+      "tainted": true,
+      "id": "GT-08"
+    },
+    {
+      "module": "sast",
+      "rule": "PY-CMDI",
+      "file": "app.py",
+      "line": 41,
+      "tainted": true,
+      "id": "GT-09"
+    },
+    {
+      "module": "sast",
+      "rule": "PY-YAML-LOAD",
+      "file": "app.py",
+      "line": 47,
+      "id": "GT-10"
+    },
+    {
+      "module": "sast",
+      "rule": "PY-TLS-VERIFY",
+      "file": "app.py",
+      "line": 53,
+      "id": "GT-11"
+    },
+    {
+      "module": "sast",
+      "rule": "PY-PATH-TRAVERSAL",
+      "file": "app.py",
+      "line": 59,
+      "tainted": true,
+      "id": "GT-12"
+    },
+    {
+      "module": "sast",
+      "rule": "PY-DEBUG-ENABLED",
+      "file": "app.py",
+      "line": 64,
+      "id": "GT-13"
+    },
+    {
+      "module": "sast",
+      "rule": "PY-HARDCODED-SECRET-KEY",
+      "file": "config.py",
+      "line": 4,
+      "id": "GT-14"
+    },
+    {
+      "module": "sast",
+      "rule": "PY-WEAK-PASSWORD-HASH",
+      "file": "auth.py",
+      "line": 8,
+      "id": "GT-15"
+    },
+    {
+      "module": "sast",
+      "rule": "PY-WEAK-RANDOM",
+      "file": "auth.py",
+      "line": 17,
+      "id": "GT-16"
+    },
+    {
+      "module": "sast",
+      "rule": "PY-ASSERT-AUTH",
+      "file": "auth.py",
+      "line": 21,
+      "id": "GT-17"
+    },
+    {
+      "module": "sast",
+      "rule": "JS-XSS-INNERHTML",
+      "file": "static/js/shop.js",
+      "line": 3,
+      "id": "GT-18"
+    },
+    {
+      "module": "sast",
+      "rule": "JS-WEAK-RANDOM",
+      "file": "static/js/shop.js",
+      "line": 7,
+      "id": "GT-19"
+    },
+    {
+      "module": "sast",
+      "rule": "JS-HARDCODED-JWT-SECRET",
+      "file": "server/index.js",
+      "line": 7,
+      "id": "GT-20"
+    },
+    {
+      "module": "sast",
+      "rule": "JS-CORS-WILDCARD",
+      "file": "server/index.js",
+      "line": 8,
+      "id": "GT-21"
+    },
+    {
+      "module": "sast",
+      "rule": "JS-JWT-VERIFY",
+      "file": "server/index.js",
+      "line": 12,
+      "id": "GT-22"
+    },
+    {
+      "module": "sast",
+      "rule": "JS-SQLI",
+      "file": "server/index.js",
+      "line": 16,
+      "id": "GT-23"
+    },
+    {
+      "module": "sast",
+      "rule": "JS-CMDI",
+      "file": "server/index.js",
+      "line": 21,
+      "id": "GT-24"
+    },
+    {
+      "module": "crypto",
+      "rule": "CRYPTO-AES-ECB",
+      "file": "crypto_utils.py",
+      "line": 11,
+      "id": "GT-25"
+    },
+    {
+      "module": "crypto",
+      "rule": "CRYPTO-RSA-SHORT-KEY",
+      "file": "crypto_utils.py",
+      "line": 17,
+      "id": "GT-26"
+    },
+    {
+      "module": "iac",
+      "rule": "DOCKER-LATEST-TAG",
+      "file": "Dockerfile",
+      "line": 1,
+      "id": "GT-27"
+    },
+    {
+      "module": "iac",
+      "rule": "DOCKER-ROOT-USER",
+      "file": "Dockerfile",
+      "line": 1,
+      "id": "GT-28"
+    },
+    {
+      "module": "iac",
+      "rule": "DOCKER-NO-HEALTHCHECK",
+      "file": "Dockerfile",
+      "line": 1,
+      "id": "GT-29"
+    },
+    {
+      "module": "iac",
+      "rule": "DOCKER-APT-NO-CLEANUP",
+      "file": "Dockerfile",
+      "line": 3,
+      "id": "GT-30"
+    },
+    {
+      "module": "iac",
+      "rule": "DOCKER-CURL-PIPE-SH",
+      "file": "Dockerfile",
+      "line": 4,
+      "id": "GT-31"
+    },
+    {
+      "module": "iac",
+      "rule": "COMPOSE-PLAINTEXT-SECRET",
+      "file": "docker-compose.yml",
+      "line": 11,
+      "id": "GT-32"
+    },
+    {
+      "module": "iac",
+      "rule": "COMPOSE-PRIVILEGED",
+      "file": "docker-compose.yml",
+      "line": 14,
+      "id": "GT-33"
+    },
+    {
+      "module": "iac",
+      "rule": "COMPOSE-DOCKER-SOCK",
+      "file": "docker-compose.yml",
+      "line": 16,
+      "id": "GT-34"
+    },
+    {
+      "module": "iac",
+      "rule": "DOTENV-COMMITTED",
+      "file": ".env",
+      "line": 1,
+      "id": "GT-35"
+    },
+    {
+      "module": "iac",
+      "rule": "GHA-UNPINNED-ACTION",
+      "file": ".github/workflows/ci.yml",
+      "line": 12,
+      "id": "GT-36"
+    },
+    {
+      "module": "iac",
+      "rule": "GHA-PERMISSIONS",
+      "file": ".github/workflows/ci.yml",
+      "line": 7,
+      "id": "GT-37"
+    },
+    {
+      "module": "iac",
+      "rule": "GHA-PRT-CHECKOUT",
+      "file": ".github/workflows/pr-preview.yml",
+      "line": 16,
+      "id": "GT-38"
+    },
+    {
+      "module": "iac",
+      "rule": "GHA-SCRIPT-INJECTION",
+      "file": ".github/workflows/triage.yml",
+      "line": 15,
+      "id": "GT-39"
+    }
+  ],
+  "vulnerable_dependencies": [
+    {
+      "ecosystem": "PyPI",
+      "package": "flask",
+      "version": "1.1.2",
+      "file": "requirements.txt"
+    },
+    {
+      "ecosystem": "PyPI",
+      "package": "werkzeug",
+      "version": "1.0.1",
+      "file": "requirements.txt"
+    },
+    {
+      "ecosystem": "PyPI",
+      "package": "jinja2",
+      "version": "2.10",
+      "file": "requirements.txt"
+    },
+    {
+      "ecosystem": "PyPI",
+      "package": "requests",
+      "version": "2.19.0",
+      "file": "requirements.txt"
+    },
+    {
+      "ecosystem": "PyPI",
+      "package": "urllib3",
+      "version": "1.24.1",
+      "file": "requirements.txt"
+    },
+    {
+      "ecosystem": "PyPI",
+      "package": "pyyaml",
+      "version": "5.3",
+      "file": "requirements.txt"
+    },
+    {
+      "ecosystem": "PyPI",
+      "package": "pycryptodome",
+      "version": "3.9.8",
+      "file": "requirements.txt"
+    },
+    {
+      "ecosystem": "PyPI",
+      "package": "pillow",
+      "version": "8.0.0",
+      "file": "requirements.txt"
+    },
+    {
+      "ecosystem": "PyPI",
+      "package": "django",
+      "version": "3.2.0",
+      "file": "requirements.txt"
+    },
+    {
+      "ecosystem": "npm",
+      "package": "axios",
+      "version": "0.21.0",
+      "file": "server/package-lock.json",
+      "direct": true
+    },
+    {
+      "ecosystem": "npm",
+      "package": "jsonwebtoken",
+      "version": "8.5.0",
+      "file": "server/package-lock.json",
+      "direct": true
+    },
+    {
+      "ecosystem": "npm",
+      "package": "lodash",
+      "version": "4.17.15",
+      "file": "server/package-lock.json",
+      "direct": true
+    },
+    {
+      "ecosystem": "npm",
+      "package": "minimist",
+      "version": "1.2.0",
+      "file": "server/package-lock.json",
+      "direct": true
+    },
+    {
+      "ecosystem": "npm",
+      "package": "follow-redirects",
+      "version": "1.13.1",
+      "file": "server/package-lock.json",
+      "direct": false
+    },
+    {
+      "ecosystem": "npm",
+      "package": "jws",
+      "version": "3.2.2",
+      "file": "server/package-lock.json",
+      "direct": false
+    },
+    {
+      "ecosystem": "npm",
+      "package": "semver",
+      "version": "5.7.1",
+      "file": "server/package-lock.json",
+      "direct": false
+    },
+    {
+      "ecosystem": "Maven",
+      "package": "org.apache.logging.log4j:log4j-core",
+      "version": "2.14.1",
+      "file": "reports-service/pom.xml"
+    }
+  ],
+  "decoys": [
+    {
+      "file": "config.py",
+      "line": 15,
+      "description": "Live-format Stripe key in a comment marked `codesentinel:ignore` (inline allow-list)."
+    },
+    {
+      "file": "server/package-lock.json",
+      "line": 21,
+      "description": "SRI integrity hash (sha512, base64) in an npm lockfile: high entropy, not a secret."
+    },
+    {
+      "file": "app.py",
+      "line": 33,
+      "description": "Parametrised SQL query (`?` placeholder with a tuple of values): safe, must not be flagged as SQLi."
+    }
+  ],
+  "expected_kev": [
+    "CVE-2023-4863 (pillow 8.0.0)",
+    "CVE-2021-44228 (log4j-core 2.14.1)"
+  ]
+}

@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ app_name }}{% endblock %}</title>
+  <link rel="icon" href="/static/logo.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script nonce="{{ nonce }}">
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'Consolas', 'monospace'],
+          },
+          colors: {
+            bg: '#0d0e11', surface: '#15171b', raised: '#1b1e23', line: '#262a31', line2: '#31353d',
+            ink: '#e7e8eb', muted: '#9096a2', faint: '#666c79',
+            accent: { DEFAULT: '#7b83eb', hover: '#9097f0', dim: '#272a4a' },
+            p0: '#e5534b', p1: '#ec835a', p2: '#f2b324', p3: '#8b8f99', good: '#3fb950',
+          },
+          fontSize: { '2xs': ['11px', '15px'] },
+        },
+      },
+    };
+  </script>
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body class="h-full bg-bg text-ink font-sans antialiased text-[14px] leading-6">
+  <header class="border-b border-line bg-bg/95 sticky top-0 z-30 backdrop-blur">
+    <div class="mx-auto max-w-[1280px] px-4 sm:px-6 h-14 flex items-center gap-6">
+      <a href="/" class="flex items-center gap-2.5 shrink-0" aria-label="{{ app_name }} home">
+        <svg width="22" height="24" viewBox="0 0 22 24" aria-hidden="true">
+          <path d="M11 1.2 20 4.6v6.3c0 5.6-3.8 10-9 11.9C5.8 20.9 2 16.5 2 10.9V4.6Z" fill="#7b83eb"/>
+          <path d="M11 6.2a3 3 0 0 0-1.2 5.75V16h2.4v-4.05A3 3 0 0 0 11 6.2Z" fill="#0d0e11"/>
+        </svg>
+        <span class="font-semibold tracking-tight text-[15px]">{{ app_name }}</span>
+      </a>
+      <nav class="flex items-center gap-1 text-[13px] text-muted overflow-x-auto">
+        <a href="/" class="nav-link {% if request.url.path == '/' %}is-active{% endif %}">New scan</a>
+        <a href="/history" class="nav-link {% if request.url.path.startswith('/history') or request.url.path.startswith('/projects') %}is-active{% endif %}">History</a>
+        <a href="/about" class="nav-link {% if request.url.path == '/about' %}is-active{% endif %}">Methodology</a>
+        <a href="/docs" class="nav-link">API</a>
+      </nav>
+      <span class="ml-auto hidden md:block text-2xs text-faint font-mono">v{{ app_version }}</span>
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-[1280px] px-4 sm:px-6 py-8">
+    {% block content %}
+      {% if not_found %}
+        <div class="py-24">
+          <p class="label">404</p>
+          <h1 class="text-xl font-semibold mt-1">Nothing here</h1>
+          <p class="text-muted mt-2">That scan, finding or page does not exist. <a class="link" href="/">Start a new scan</a>.</p>
+        </div>
+      {% endif %}
+    {% endblock %}
+  </main>
+
+  <footer class="border-t border-line mt-16">
+    <div class="mx-auto max-w-[1280px] px-4 sm:px-6 py-6 text-2xs text-faint flex flex-wrap gap-x-6 gap-y-1">
+      <span>Data: OSV.dev, FIRST EPSS, CISA KEV</span>
+      <span>Secrets are fingerprinted and redacted, never stored or validated</span>
+      <span>Scan only code you own or are authorised to assess</span>
+    </div>
+  </footer>
+  {% block scripts %}{% endblock %}
+  <script src="/static/app.js" nonce="{{ nonce }}"></script>
+</body>
+</html>

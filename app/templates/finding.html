@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}{{ f.rule_id }} · {{ app_name }}{% endblock %}
+{% block content %}
+{% set x = f.extra %}
+<nav class="text-[13px] text-muted flex flex-wrap gap-1.5" aria-label="Breadcrumb">
+  <a class="hover:text-ink" href="/scans/{{ scan.id }}">{{ scan.project.name }} · scan #{{ scan.id }}</a><span class="text-faint">/</span>
+  <span class="text-ink font-mono">{{ f.rule_id }}</span>
+</nav>
+
+<div class="mt-4 flex flex-wrap items-center gap-2">
+  <span class="chip chip-{{ f.priority|lower }}">{{ f.priority }}</span>
+  <span class="chip">{{ f.severity }}</span>
+  <span class="chip">{{ {'secrets':'Secrets','dependencies':'Dependency','sast':'SAST','iac':'IaC / CI','crypto':'Crypto'}[f.module] }}</span>
+  {% if x.in_kev %}<span class="chip chip-kev">CISA KEV</span>{% endif %}
+  {% if f.tainted %}<span class="chip chip-p1">taint-confirmed</span>{% endif %}
+  {% if x.historical %}<span class="chip chip-p1">git history only</span>{% endif %}
+  {% if x.placeholder %}<span class="chip chip-muted">placeholder</span>{% endif %}
+  {% if row.status != 'open' %}<span class="chip chip-muted">{{ row.status|replace('_', ' ') }}</span>{% endif %}
+</div>
+<h1 class="text-[21px] font-semibold tracking-tight mt-3 max-w-[90ch] break-words">{{ f.title }}</h1>
+<p class="text-[13px] text-muted mt-1">{{ x.priority_reason }} · risk score <span class="font-mono text-ink">{{ '%.2f' % row.risk_score }}</span></p>
+
+<div class="grid lg:grid-cols-[minmax(0,1fr)_340px] gap-6 mt-6">
+  <div class="space-y-6 min-w-0">
+    {% if f.snippet %}
+    <section>
+      <p class="label mb-2 font-mono normal-case tracking-normal">{{ f.file }}{% if f.line %}:{{ f.line }}{% endif %}{% if x.commit %} <span class="text-faint">@ {{ x.commit[:10] }}</span>{% endif %}</p>
+      <div class="code py-2" role="region" aria-label="Code snippet">
+        {%- for s in f.snippet -%}
+        <span class="row{{ ' hit' if s.hit else '' }}"><span class="ln">{{ s.n }}</span>{{ s.text }}</span>
+        {%- endfor -%}
+      </div>
+    </section>
+    {% endif %}
+
+    <section>
+      <h2 class="label">What is wrong</h2>
+      <div class="mt-2 max-w-[85ch] break-words space-y-3">{% for para in f.description | paragraphs %}{% if para.heading %}<p class="font-medium text-ink pt-1">{{ para.text }}</p>{% else %}<p class="whitespace-pre-line">{{ para.text }}</p>{% endif %}{% endfor %}</div>
+    </section>
+
+    <section>
+      <h2 class="label">How to fix it</h2>
+      <p class="mt-2 whitespace-pre-line max-w-[85ch]">{{ f.remediation }}</p>
+      {% if f.secure_example %}
+      <p class="label mt-4 mb-2">Secure example</p>
+      <pre class="code p-3 whitespace-pre-wrap">{{ f.secure_example }}</pre>
+      {% endif %}
+    </section>
+
+    {% if f.references %}
+    <section>
+      <h2 class="label">References</h2>
+      <ul class="mt-2 space-y-1 text-[13px]">
+        {% for r in f.references[:10] %}<li class="break-all"><a class="link" href="{{ r }}" target="_blank" rel="noopener noreferrer">{{ r }}</a></li>{% endfor %}
+      </ul>
+    </section>
+    {% endif %}
+  </div>
+
+  <aside class="space-y-4">
+    <div class="panel">
+      <div class="panel-head"><span class="label">Details</span></div>
+      <dl class="px-4 py-3 grid grid-cols-[110px_1fr] gap-y-2 text-[13px]">
+        <dt class="text-muted">Rule</dt><dd class="font-mono break-all">{{ f.rule_id }}</dd>
+        {% set cwes = x.cwes if x.cwes else ([f.cwe] if f.cwe else []) %}
+        {% if cwes %}<dt class="text-muted">CWE</dt><dd class="flex flex-wrap gap-x-2">{% for c in cwes %}<a class="link" href="{{ cwe_url(c) }}" target="_blank" rel="noopener noreferrer">{{ c }}</a>{% endfor %}</dd>{% endif %}
+        {% if f.owasp %}<dt class="text-muted">OWASP</dt><dd><a class="link" href="{{ owasp_urls[f.owasp] }}" target="_blank" rel="noopener noreferrer">{{ f.owasp_name }}</a></dd>{% endif %}
+        <dt class="text-muted">Location</dt><dd class="font-mono break-all">{{ f.file or '—' }}{% if f.line %}:{{ f.line }}{% endif %}</dd>
+        {% if x.redacted %}<dt class="text-muted">Value</dt><dd class="font-mono">{{ x.redacted }} <span class="text-faint">(redacted)</span></dd>{% endif %}
+        {% if x.historical %}
+          <dt class="text-muted">Commit</dt><dd class="font-mono">{{ x.commit[:12] }}</dd>
+          <dt class="text-muted">Committed</dt><dd>{{ x.commit_date }}</dd>
+        {% elif x.introduced_in %}
+          <dt class="text-muted">Introduced</dt><dd><span class="font-mono">{{ x.introduced_in[:10] }}</span> · {{ x.introduced_on }}</dd>
+        {% endif %}
+        {% if x.other_locations %}<dt class="text-muted">Also in</dt><dd class="font-mono text-[12px] break-all">{{ x.other_locations|join(', ') }}</dd>{% endif %}
+        <dt class="text-muted">Confidence</dt><dd>{{ f.confidence }}</dd>
+        <dt class="text-muted">Fingerprint</dt><dd class="font-mono text-[11.5px] text-muted break-all">{{ row.fingerprint[:24] }}…</dd>
+      </dl>
+    </div>
+
+    {% if f.module == 'dependencies' %}
+    <div class="panel">
+      <div class="panel-head"><span class="label">Exploitability</span>{% if x.intel_partial %}<span class="text-2xs text-p2">partial intel</span>{% endif %}</div>
+      <div class="px-4 py-3 space-y-4 text-[13px]">
+        <div>
+          <div class="flex items-baseline justify-between"><span class="text-muted">CVSS {{ x.cvss_version or '' }}</span><span class="text-[18px] font-semibold">{{ '%.1f' % x.cvss_score if x.cvss_score is not none else '—' }}</span></div>
+          {% if x.cvss_score is not none %}<div class="bar-track mt-1.5"><div class="bar-fill" style="width: {{ (x.cvss_score * 10)|round(1) }}%"></div></div>{% endif %}
+          {% if vector_rows %}
+          <table class="w-full mt-3 text-[12.5px]">
+            {% for name, val, raw in vector_rows %}<tr><td class="text-muted py-0.5">{{ name }}</td><td class="text-right">{{ val }} <span class="font-mono text-faint text-2xs">{{ raw }}</span></td></tr>{% endfor %}
+          </table>
+          {% elif x.cvss_source %}<p class="text-2xs text-faint mt-1">From advisory severity label ({{ x.cvss_source }}).</p>{% endif %}
+        </div>
+        <div>
+          <div class="flex items-baseline justify-between"><span class="text-muted">EPSS (30-day exploit probability)</span><span class="text-[18px] font-semibold">{{ '%.1f%%' % (x.epss * 100) if x.epss is not none else '—' }}</span></div>
+          {% if x.epss_percentile is not none %}
+          <div class="bar-track mt-1.5"><div class="bar-fill" style="width: {{ (x.epss_percentile * 100)|round(1) }}%"></div></div>
+          <p class="text-2xs text-faint mt-1">Higher than {{ '%.1f' % (x.epss_percentile * 100) }}% of all scored CVEs{% if x.epss_date %} · FIRST, {{ x.epss_date }}{% endif %}</p>
+          {% endif %}
+        </div>
+        <div>
+          <span class="text-muted">CISA KEV</span>
+          {% if x.in_kev %}
+            <p class="mt-1"><span class="chip chip-kev">Known exploited</span> <span class="ml-1">added {{ x.kev_date_added }}, federal due date {{ x.kev_due_date }}</span></p>
+            {% if x.kev_ransomware == 'Known' %}<p class="text-2xs text-p1 mt-1">Used in ransomware campaigns.</p>{% endif %}
+          {% else %}<p class="mt-1 text-muted">Not listed</p>{% endif %}
+        </div>
+        <div class="border-t border-line pt-3">
+          <p class="text-muted">{{ x.package }} <span class="font-mono text-ink">{{ x.version }}</span> · {{ x.ecosystem }} · {{ 'direct' if x.direct else 'transitive' }}</p>
+          <p class="mt-1">Fixed in <span class="font-mono">{{ x.fixed_version or 'no release yet' }}</span></p>
+          {% if x.upgrade_command %}
+          <div class="mt-2 flex items-start gap-2">
+            <code class="code px-2 py-1.5 text-[12px] flex-1 whitespace-pre-wrap break-all" id="upgrade-cmd">{{ x.upgrade_command }}</code>
+            <button class="btn btn-sm" data-copy="upgrade-cmd">Copy</button>
+          </div>
+          {% endif %}
+          <p class="text-2xs text-faint mt-2 break-all">{{ x.vuln_ids|join(', ') }}{% if x.cves %} · {{ x.cves|join(', ') }}{% endif %}</p>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <form class="panel" id="triage-form" data-finding-id="{{ row.id }}">
+      <div class="panel-head"><span class="label">Triage</span><span class="text-2xs text-faint" id="triage-state">{{ row.status|replace('_', ' ') }}</span></div>
+      <div class="px-4 py-3 space-y-3 text-[13px]">
+        <select name="status" class="field" aria-label="Status">
+          <option value="open" {{ 'selected' if row.status == 'open' }}>Open</option>
+          <option value="false_positive" {{ 'selected' if row.status == 'false_positive' }}>False positive</option>
+          <option value="accepted_risk" {{ 'selected' if row.status == 'accepted_risk' }}>Accepted risk</option>
+        </select>
+        <textarea name="justification" rows="3" class="field" placeholder="Why? (required, shown in exports and the audit trail)" aria-label="Justification">{{ row.justification or '' }}</textarea>
+        <div class="flex items-center gap-3">
+          <button class="btn btn-sm btn-primary" type="submit">Save</button>
+          <span class="text-2xs text-faint" id="triage-msg">Re-evaluates the gate and grade.</span>
+        </div>
+      </div>
+    </form>
+  </aside>
+</div>
+{% endblock %}

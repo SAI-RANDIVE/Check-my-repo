@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block title %}Methodology · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="max-w-[900px]">
+  <h1 class="text-[22px] font-semibold tracking-tight">How CodeSentinel decides what matters</h1>
+  <p class="text-muted mt-2">A CVSS 9.8 nobody exploits is less urgent than a CVSS 7.5 that ransomware crews use every week. CodeSentinel ranks findings by how likely they are to hurt you: known exploitation (CISA KEV), predicted exploitation (FIRST EPSS), and whether the issue is actually live in the code you ship.</p>
+</div>
+
+<section class="mt-8">
+  <h2 class="label">Architecture</h2>
+  <div class="panel mt-2 p-4 overflow-x-auto">
+    <svg viewBox="0 0 1040 330" class="w-full min-w-[760px]" role="img" aria-labelledby="arch-title arch-desc" font-family="Inter, sans-serif">
+      <title id="arch-title">CodeSentinel architecture</title>
+      <desc id="arch-desc">Targets are ingested into a sandbox, analysed by five scanners, enriched with OSV, EPSS and KEV intelligence, scored, and exported.</desc>
+      <defs>
+        <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="#666c79"/></marker>
+      </defs>
+      <g font-size="12" fill="#e7e8eb">
+        <!-- inputs -->
+        <text x="20" y="28" fill="#8b909c" font-size="10.5" letter-spacing=".08em">TARGET</text>
+        <rect x="20" y="40" width="150" height="40" rx="7" fill="#1b1e23" stroke="#31353d"/><text x="95" y="65" text-anchor="middle">GitHub URL</text>
+        <rect x="20" y="92" width="150" height="40" rx="7" fill="#1b1e23" stroke="#31353d"/><text x="95" y="117" text-anchor="middle">.zip upload</text>
+        <rect x="20" y="144" width="150" height="40" rx="7" fill="#1b1e23" stroke="#31353d"/><text x="95" y="169" text-anchor="middle">Local path · CLI · CI</text>
+        <!-- ingest -->
+        <text x="215" y="28" fill="#8b909c" font-size="10.5" letter-spacing=".08em">INGEST</text>
+        <rect x="215" y="40" width="160" height="144" rx="8" fill="#15171b" stroke="#31353d"/>
+        <text x="295" y="74" text-anchor="middle" font-weight="600">Sandbox</text>
+        <text x="295" y="98" text-anchor="middle" fill="#9096a2" font-size="11">timeout 120 s · 200 MB</text>
+        <text x="295" y="116" text-anchor="middle" fill="#9096a2" font-size="11">zip-slip &amp; bomb guard</text>
+        <text x="295" y="134" text-anchor="middle" fill="#9096a2" font-size="11">read-only, never executed</text>
+        <text x="295" y="152" text-anchor="middle" fill="#9096a2" font-size="11">.codesentinel.yml policy</text>
+        <line x1="170" y1="60" x2="213" y2="80" stroke="#666c79" marker-end="url(#arr)"/>
+        <line x1="170" y1="112" x2="213" y2="112" stroke="#666c79" marker-end="url(#arr)"/>
+        <line x1="170" y1="164" x2="213" y2="144" stroke="#666c79" marker-end="url(#arr)"/>
+        <!-- scanners -->
+        <text x="420" y="28" fill="#8b909c" font-size="10.5" letter-spacing=".08em">SCANNERS</text>
+        <g>
+          <rect x="420" y="40" width="200" height="30" rx="6" fill="#1b1e23" stroke="#31353d"/><text x="432" y="60">Secrets · HEAD + history</text>
+          <rect x="420" y="76" width="200" height="30" rx="6" fill="#1b1e23" stroke="#31353d"/><text x="432" y="96">Dependencies · 6 formats</text>
+          <rect x="420" y="112" width="200" height="30" rx="6" fill="#1b1e23" stroke="#31353d"/><text x="432" y="132">SAST · Python AST + JS</text>
+          <rect x="420" y="148" width="200" height="30" rx="6" fill="#1b1e23" stroke="#31353d"/><text x="432" y="168">IaC &amp; GitHub Actions</text>
+          <rect x="420" y="184" width="200" height="30" rx="6" fill="#1b1e23" stroke="#31353d"/><text x="432" y="204">Crypto inventory</text>
+        </g>
+        <line x1="375" y1="112" x2="418" y2="112" stroke="#666c79" marker-end="url(#arr)"/>
+        <!-- intel -->
+        <rect x="420" y="250" width="200" height="62" rx="8" fill="#1d1f33" stroke="#3a3f6e"/>
+        <text x="520" y="274" text-anchor="middle" font-weight="600">Threat intel</text>
+        <text x="520" y="294" text-anchor="middle" fill="#b8bcf5" font-size="11">OSV.dev · FIRST EPSS · CISA KEV</text>
+        <path d="M420 281 H402 V91 H417" fill="none" stroke="#7b83eb" stroke-dasharray="3 3" marker-end="url(#arr)"/>
+        <text x="632" y="292" fill="#8b909c" font-size="10.5">SQLite cache with TTL,</text>
+        <text x="632" y="306" fill="#8b909c" font-size="10.5">retries, graceful degradation</text>
+        <!-- scoring -->
+        <text x="655" y="28" fill="#8b909c" font-size="10.5" letter-spacing=".08em">DECIDE</text>
+        <rect x="655" y="40" width="190" height="174" rx="8" fill="#15171b" stroke="#31353d"/>
+        <text x="750" y="70" text-anchor="middle" font-weight="600">Scoring &amp; gate</text>
+        <text x="750" y="96" text-anchor="middle" fill="#9096a2" font-size="11">de-duplicate · suppress</text>
+        <text x="750" y="114" text-anchor="middle" fill="#9096a2" font-size="11">P0 – P3 tiers</text>
+        <text x="750" y="132" text-anchor="middle" fill="#9096a2" font-size="11">risk = sev × exploit × exposure</text>
+        <text x="750" y="150" text-anchor="middle" fill="#9096a2" font-size="11">grade A – F</text>
+        <text x="750" y="168" text-anchor="middle" fill="#9096a2" font-size="11">PASS / FAIL (exit code)</text>
+        <line x1="620" y1="127" x2="653" y2="127" stroke="#666c79" marker-end="url(#arr)"/>
+        <!-- outputs -->
+        <text x="880" y="28" fill="#8b909c" font-size="10.5" letter-spacing=".08em">OUTPUT</text>
+        <g>
+          <rect x="880" y="40" width="145" height="28" rx="6" fill="#1b1e23" stroke="#31353d"/><text x="892" y="59">Web report</text>
+          <rect x="880" y="74" width="145" height="28" rx="6" fill="#1b1e23" stroke="#31353d"/><text x="892" y="93">PDF</text>
+          <rect x="880" y="108" width="145" height="28" rx="6" fill="#1b1e23" stroke="#31353d"/><text x="892" y="127">SBOM · CycloneDX</text>
+          <rect x="880" y="142" width="145" height="28" rx="6" fill="#1b1e23" stroke="#31353d"/><text x="892" y="161">CBOM · CycloneDX</text>
+          <rect x="880" y="176" width="145" height="28" rx="6" fill="#1b1e23" stroke="#31353d"/><text x="892" y="195">SARIF → GitHub</text>
+        </g>
+        <line x1="845" y1="127" x2="878" y2="127" stroke="#666c79" marker-end="url(#arr)"/>
+      </g>
+    </svg>
+  </div>
+</section>
+
+<div class="grid lg:grid-cols-2 gap-8 mt-10">
+  <section>
+    <h2 class="text-[16px] font-semibold">Priority tiers</h2>
+    <div class="mt-3 space-y-3 text-[13.5px]">
+      <div class="flex gap-3"><span class="chip chip-p0 mt-0.5">P0</span><p><b class="font-medium">Critical now.</b> Dependency CVE in CISA KEV; or CVSS ≥ 9.0 and EPSS ≥ 0.10; or a live-format credential in the current code; or SQL/command injection reached by user input (taint-confirmed).</p></div>
+      <div class="flex gap-3"><span class="chip chip-p1 mt-0.5">P1</span><p><b class="font-medium">High.</b> CVSS ≥ 7.0 with EPSS ≥ 0.01 (or no EPSS score); a secret still recoverable from git history; <span class="font-mono text-[12.5px]">pull_request_target</span> running untrusted code; broken cryptography; other high-severity rules.</p></div>
+      <div class="flex gap-3"><span class="chip chip-p2 mt-0.5">P2</span><p><b class="font-medium">Medium.</b> Other CVSS ≥ 4.0; unpinned third-party actions; containers running as root; weak cryptography; static-analysis hits without a confirmed taint path.</p></div>
+      <div class="flex gap-3"><span class="chip chip-p3 mt-0.5">P3</span><p><b class="font-medium">Low / info.</b> Everything else, including documentation placeholders such as AWS's example key.</p></div>
+    </div>
+  </section>
+  <section>
+    <h2 class="text-[16px] font-semibold">Score and grade</h2>
+    <div class="code p-4 mt-3 text-[12.5px] leading-6 whitespace-pre-wrap">risk  = severity_weight × exploit × exposure
+  severity_weight  critical 10 · high 6 · medium 3 · low 1 · info 0.25
+  exploit          1 + 4 × EPSS  (+2 if listed in CISA KEV)
+  exposure         1.0 HEAD / direct · 0.6 transitive
+                   0.5 history-only secret · 0.3 test files
+
+score = 100 − min(100, Σ risk ÷ 10)
+grade = A ≥ 90 · B ≥ 80 · C ≥ 70 · D ≥ 55 · F &lt; 55</div>
+    <p class="text-[13px] text-muted mt-3">The gate fails when any open finding sits at or above the chosen tier (<span class="font-mono">--fail-on p0|p1|p2</span>, default P0). Suppressions in <span class="font-mono">.codesentinel.yml</span> need a justification and an expiry date; expired ones resurface automatically.</p>
+  </section>
+</div>
+
+<div class="grid lg:grid-cols-2 gap-8 mt-10">
+  <section>
+    <h2 class="text-[16px] font-semibold">Data sources</h2>
+    <ul class="mt-3 space-y-2.5 text-[13.5px]">
+      <li><a class="link" href="https://osv.dev" target="_blank" rel="noopener noreferrer">OSV.dev</a>: open vulnerability database aggregating GitHub Security Advisories, PyPA, npm, Go, Maven and more. Queried with <span class="font-mono text-[12.5px]">/v1/querybatch</span>.</li>
+      <li><a class="link" href="https://www.first.org/epss/" target="_blank" rel="noopener noreferrer">FIRST EPSS</a>: daily machine-learning estimate of the probability a CVE is exploited in the next 30 days.</li>
+      <li><a class="link" href="https://www.cisa.gov/known-exploited-vulnerabilities-catalog" target="_blank" rel="noopener noreferrer">CISA KEV</a>: CVEs with confirmed exploitation in the wild, with remediation due dates for US federal agencies.</li>
+      <li><a class="link" href="https://cyclonedx.org/specification/overview/" target="_blank" rel="noopener noreferrer">CycloneDX 1.6</a> for SBOM and CBOM; <a class="link" href="https://docs.oasis-open.org/sarif/sarif/v2.1.0/" target="_blank" rel="noopener noreferrer">SARIF 2.1.0</a> for GitHub code scanning.</li>
+      <li>Regulatory context: CERT-In's SBOM guidelines (October 2024) and BOM guidelines v2.0 (July 2025, adding CBOM/QBOM/AIBOM/HBOM); SEBI's Cybersecurity and Cyber Resilience Framework (August 2024).</li>
+    </ul>
+  </section>
+  <section>
+    <h2 class="text-[16px] font-semibold">Ethics and data handling</h2>
+    <ul class="mt-3 space-y-2.5 text-[13.5px] text-muted">
+      <li><span class="text-ink">Scan only code you own or are authorised to assess</span>, or public repositories for research.</li>
+      <li>Secret values are never stored, logged or exported. Each one is reduced to a SHA-256 fingerprint and a redacted preview (first 4 + **** + last 4).</li>
+      <li>Secrets are <span class="text-ink">never validated</span> against provider APIs. Testing a stranger's key is unauthorised access even when the key is public.</li>
+      <li>Scanned code is never executed: no install scripts, builds or hooks. Clones are deleted after the scan.</li>
+    </ul>
+  </section>
+</div>
+{% endblock %}
